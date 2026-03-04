@@ -2747,8 +2747,11 @@
         // Dummy Data representing your events
         const events = [
             { id: 1, title: "New Year's Morning Yoga + Brunch", time: "Thu, 10:00 AM", location: "@The studio by copper and clov...", lat: 12.9716, lng: 77.5946, img: "https://via.placeholder.com/150" },
-            { id: 2, title: "Indie Art Gallery Walk", time: "Fri, 4:00 PM", location: "@Koramangala Arts", lat: 12.9345, lng: 77.6208, img: "https://via.placeholder.com/150" }
+            { id: 2, title: "Indie Art Gallery Walk", time: "Fri, 4:00 PM", location: "@Koramangala Arts", lat: 12.9345, lng: 77.6208, img: "https://via.placeholder.com/150" },
+            { id: 3, title: "Underground Jazz Night", time: "Sat, 8:00 PM", location: "@Indiranagar Secret Spot", lat: 12.9784, lng: 77.6408, img: "https://via.placeholder.com/150" },
+            { id: 4, title: "Pottery & Wine", time: "Sun, 5:00 PM", location: "@Whitefield Creative Hub", lat: 12.9698, lng: 77.7499, img: "https://via.placeholder.com/150" }
         ];
+
 
         // 1. Add your access token here
         mapboxgl.accessToken = 'pk.eyJ1IjoiY2hhbm1hcCIsImEiOiJjbW1jOGVnYnkwMzF1MnBzYnY3ZDhuZzMxIn0.8dH19TCFHVDodQ3daiktAg';
@@ -2774,35 +2777,84 @@
             // Populate the UI with your custom pink cards
             const cardContainer = document.getElementById('event-cards');
 
-            events.forEach((event, index) => {
-                // 1. Create the HTML for the card based on your image
+            // Store a reference to all markers so we can highlight them later
+            const markers = {};
+
+            events.forEach((event) => {
+                // 1. Create the HTML for the card, adding data-lat and data-lng
                 const cardHTML = `
-          <div class="event-card" id="card-${event.id}">
-            <img class="event-card-img" src="${event.img}" alt="Event">
-            <div class="event-card-content">
-              <p class="event-card-title">${event.title}</p>
-              <p class="event-card-time">${event.time}</p>
-              <p class="event-card-location">${event.location}</p>
-            </div>
-          </div>
-        `;
+      <div class="event-card" id="card-${event.id}" data-lat="${event.lat}" data-lng="${event.lng}" data-id="${event.id}">
+        <img class="event-card-img" src="${event.img}" alt="Event">
+        <div class="event-card-content">
+          <p class="event-card-title">${event.title}</p>
+          <p class="event-card-time">${event.time}</p>
+          <p class="event-card-location">${event.location}</p>
+        </div>
+      </div>
+    `;
                 cardContainer.insertAdjacentHTML('beforeend', cardHTML);
 
-                // 2. Add the custom pink dot markers to the map
+                // 2. Create the custom marker
                 const el = document.createElement('div');
                 el.className = 'custom-marker';
+                el.id = `marker-${event.id}`; // Give the marker an ID
 
                 const marker = new mapboxgl.Marker({ element: el })
                     .setLngLat([event.lng, event.lat])
                     .addTo(map);
 
-                // 3. Link Marker Clicks to Card Scrolling
+                markers[event.id] = el; // Save it to our references
+
+                // 3. Keep click-to-scroll functionality
                 el.addEventListener('click', () => {
                     document.getElementById(`card-${event.id}`).scrollIntoView({ behavior: 'smooth', inline: 'center' });
-                    map.flyTo({ center: [event.lng, event.lat], zoom: 15 });
                 });
             });
-        });
+
+            // Set up the Intersection Observer
+            const observerOptions = {
+                root: document.getElementById('event-cards'), // The scrolling container
+                rootMargin: '0px',
+                threshold: 0.6 // Trigger when 60% of the card is visible
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // 1. Get the coordinates from the card that is currently on screen
+                        const lat = parseFloat(entry.target.getAttribute('data-lat'));
+                        const lng = parseFloat(entry.target.getAttribute('data-lng'));
+                        const activeId = entry.target.getAttribute('data-id');
+
+                        // 2. Tell Mapbox to fly to this location
+                        map.flyTo({
+                            center: [lng, lat],
+                            zoom: 14,
+                            speed: 1.2,
+                            essential: true // this animation is considered essential with respect to prefers-reduced-motion
+                        });
+
+                        // 3. Highlight the active marker (Optional but highly recommended)
+                        // First, remove highlight from all markers
+                        Object.values(markers).forEach(m => {
+                            m.style.transform = 'scale(1)';
+                            m.style.border = '2px solid white';
+                        });
+                        // Then, enlarge the active marker
+                        if (markers[activeId]) {
+                            markers[activeId].style.transform = 'scale(1.5)';
+                            markers[activeId].style.border = '3px solid black';
+                            markers[activeId].style.transition = 'all 0.3s ease'; // Smooth animation
+                        }
+                    }
+                });
+            }, observerOptions);
+
+            // Tell the observer to watch every single card we generated
+            document.querySelectorAll('.event-card').forEach(card => {
+                observer.observe(card);
+            });
+
 
         // Quick script to toggle the map view when you click your new map tab
         // (Attach this to whatever your new tab's ID is)
