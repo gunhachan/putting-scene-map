@@ -2799,7 +2799,10 @@
                 el.className = 'custom-marker';
                 el.id = `marker-${event.id}`; // Give the marker an ID
 
-                const marker = new mapboxgl.Marker({ element: el })
+                const marker = new mapboxgl.Marker({
+                    element: el,
+                    anchor: 'center' // This completely fixes the wobbling!
+                })
                     .setLngLat([event.lng, event.lat])
                     .addTo(map);
 
