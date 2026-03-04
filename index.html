@@ -932,7 +932,7 @@
         }
 
         @media (pointer:fine) {
-            [data-vaul-handle-hitarea]: {
+            [data-vaul-handle-hitarea] {
                 width: 100%;
                 height: 100%
             }
@@ -2853,7 +2853,9 @@
             // Tell the observer to watch every single card we generated
             document.querySelectorAll('.event-card').forEach(card => {
                 observer.observe(card);
+
             });
+        });
 
 
         // Quick script to toggle the map view when you click your new map tab
